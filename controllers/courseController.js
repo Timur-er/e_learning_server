@@ -8,6 +8,16 @@ const {
 const {createCourseInfo, createCourseDescription, createCourseQuestions} = require('../service/course_service');
 const {generateCertificate} = require('../service/certificate-service');
 const {logger} = require("sequelize/lib/utils/logger");
+const {S3Client, GetObjectCommand} = require("@aws-sdk/client-s3");
+const {getSignedUrl} = require("@aws-sdk/s3-request-presigner");
+
+const s3 = new S3Client({
+    credentials: {
+        accessKeyId: process.env.ACCESS_KEY,
+        secretAccessKey: process.env.SECRET_ACCESS_KEY,
+    },
+    region: process.env.BUCKET_REGION,
+})
 
 class CourseController {
     async createCourse(req, res, next) {
@@ -59,13 +69,22 @@ class CourseController {
         try {
             const {user_id} = req.params;
 
-            let products = await Courses.findAll();
+            let courses = await Courses.findAll();
 
+            for (let course of courses) {
+                const objectParams = {
+                    Bucket: process.env.BUCKET_NAME,
+                    Key: course.image
+                }
+                const command = new GetObjectCommand(objectParams);
+                const url = await getSignedUrl(s3, command, {expiresIn: 3600})
+                course.image = url;
+            }
 
             if (user_id !== 'undefined') {
                 const paid_courses = await Enrollments.findAll({where: {user_id}})
 
-                products = products.map(course => {
+                courses = courses.map(course => {
 
                     const is_course_paid = paid_courses.find(paid_course => {
                             return paid_course.dataValues.course_id === course.dataValues.id;
@@ -80,7 +99,7 @@ class CourseController {
                 });
             }
 
-            return res.json(products)
+            return res.json(courses)
         } catch (e) {
             console.log(e);
         }
@@ -125,6 +144,14 @@ class CourseController {
 
             const course = await Courses.findOne({where: {id: course_id}})
             const lector = await Lector.findOne({where: {id: course.lector_id}})
+
+            const objectParams = {
+                Bucket: process.env.BUCKET_NAME,
+                Key: course.image
+            }
+            const command = new GetObjectCommand(objectParams);
+            const url = await getSignedUrl(s3, command, {expiresIn: 3600})
+            course.image = url;
 
             return res.json({course, lector, is_paid: is_course_bought, user_attempts, is_complete});
         } catch (e) {

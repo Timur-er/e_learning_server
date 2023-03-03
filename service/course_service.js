@@ -3,6 +3,8 @@ const {Lector, CourseArea, CourseLevel, Certificates, Courses, DescriptionTitles
 } = require("../models/models");
 const path = require("path");
 const uuid = require('uuid')
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+
 
 class CourseService {
 
@@ -27,8 +29,38 @@ class CourseService {
         let image_file_name = uuid.v4() + '.jpg';
         let certificate_file_name = uuid.v4() + '.jpg';
 
-        await image.mv(path.resolve(__dirname, '..', 'static', image_file_name));
-        await certificate.mv(path.resolve(__dirname, '..', 'static', certificate_file_name))
+        console.log(image);
+
+        const s3 = new S3Client({
+            credentials: {
+                accessKeyId: process.env.ACCESS_KEY,
+                secretAccessKey: process.env.SECRET_ACCESS_KEY,
+            },
+            region: process.env.BUCKET_REGION,
+        })
+
+        const image_params = {
+            Bucket: process.env.BUCKET_NAME,
+            Key: image_file_name,
+            Body: image.data,
+            ContentType: image.mimetype,
+        }
+        const image_command = new PutObjectCommand(image_params)
+
+        const certificate_params = {
+            Bucket: process.env.BUCKET_NAME,
+            Key: certificate_file_name,
+            Body: certificate.data,
+            ContentType: certificate.mimetype,
+        }
+        const certificate_command = new PutObjectCommand(certificate_params)
+
+        await s3.send(image_command);
+        await s3.send(certificate_command);
+
+
+        // await image.mv(path.resolve(__dirname, '..', 'static', image_file_name));
+        // await certificate.mv(path.resolve(__dirname, '..', 'static', certificate_file_name))
 
         let [lectorDB, lector_created] = await Lector.findOrCreate({
             where: {lector_name: lector},
