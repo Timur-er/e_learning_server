@@ -3,7 +3,7 @@ const uuid = require('uuid')
 const path = require('path')
 const {
     Courses, Lector, Certificates, DescriptionTitles, DescriptionContent, CourseArea, CourseLevel, Enrollments,
-    Questions, Answers, CourseVideo
+    Questions, Answers, CourseVideo, CourseLabels
 } = require('../models/models');
 const {createCourseInfo, createCourseDescription, createCourseQuestions} = require('../service/course_service');
 const {generateCertificate} = require('../service/certificate-service');
@@ -257,6 +257,22 @@ class CourseController {
         return res.json(finished_courses_response);
     }
 
+    async addCourseLabel (req, res) {
+        try {
+            const {course_label} = req.body;
+
+            await CourseLabels.findOrCreate({where: {label: course_label}})
+
+            return res.json('Course label added successfully')
+        } catch (e) {
+            console.log(e);
+        }
+    }
+
+    async getAllCourseLabels (req, res) {
+        const courses = await CourseLabels.findAll();
+        res.json(courses)
+    }
 }
 
 module.exports = new CourseController();

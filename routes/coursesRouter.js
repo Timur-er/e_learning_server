@@ -15,5 +15,7 @@ router.get('/getCourseVideo/:course_id', courseController.getCourseVideo)
 router.post('/submitCourse', courseController.submitCourse)
 router.get('/downloadCourse/:course_id&:user_id', courseController.downloadCertificate)
 router.get('/getFinishedCourses/:user_id', courseController.getFinishedCourses)
+router.post('/addCourseLabel', courseController.addCourseLabel)
+router.get('/getAllCourseLabels', courseController.getAllCourseLabels)
 
 module.exports = router;

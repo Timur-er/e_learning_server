@@ -11,14 +11,17 @@ class CourseService {
             course_title,
             lector,
             lector_description,
+            lector_link,
             short_description,
             video_link,
             price,
+            previous_price,
             course_duration,
             course_level,
             course_area,
             attempts,
             percentage,
+            course_labels,
         } = JSON.parse(main_info)
 
         let image_file_name = uuid.v4() + '.jpg';
@@ -31,6 +34,7 @@ class CourseService {
             where: {lector_name: lector},
             defaults: {
                 short_description: lector_description,
+                lector_link: lector_link
             }
         })
         let [area, area_created] = await CourseArea.findOrCreate({where: {area: course_area}})
@@ -47,7 +51,9 @@ class CourseService {
             attempts,
             percentage,
             course_area_id: area.id,
-            course_level_id: level.id
+            course_level_id: level.id,
+            labels_id: course_labels,
+            previous_price: previous_price,
         })
 
         const course_id = course.id;
