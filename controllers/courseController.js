@@ -69,7 +69,13 @@ class CourseController {
         try {
             const {user_id} = req.params;
 
-            let courses = await Courses.findAll();
+            let courses = await Courses.findAll({
+                include: [{
+                    model: CourseLabels,
+                    as: 'labels',
+                    attributes: ['id', 'label']
+                }],
+            });
 
             for (let course of courses) {
                 const objectParams = {
@@ -77,8 +83,7 @@ class CourseController {
                     Key: course.image
                 }
                 const command = new GetObjectCommand(objectParams);
-                const url = await getSignedUrl(s3, command, {expiresIn: 3600})
-                course.image = url;
+                course.image = await getSignedUrl(s3, command, {expiresIn: 3600});
             }
 
             if (user_id !== 'undefined') {
@@ -107,20 +112,22 @@ class CourseController {
 
     async getCourseDescriptionByID(req, res, next) {
         try {
-            const {course_id} = req.params;
-            const titles = await DescriptionTitles.findAll({where: {course_id}});
-            let final = [];
-            for (let title of titles) {
-                const descriptions = await DescriptionContent.findAll({where: {description_title_id: title.id}})
-                let descArray = [];
-                for (let description of descriptions) {
-                    descArray.push(description.description)
-                }
-                final.push({title: title.title, description: descArray})
-            }
-            return res.json(final)
+            const { course_id } = req.params;
+            const titles = await DescriptionTitles.findAll({
+                where: { course_id },
+                include: {
+                    model: DescriptionContent,
+                    attributes: ['description'],
+                },
+                attributes: ['title'],
+            });
+            const final = titles.map(title => ({
+                title: title.title,
+                description: title.description_contents.map(desc => desc.description),
+            }));
+            return res.json(final);
         } catch (e) {
-            next(ApiError.BadRequest(e.message))
+            next(ApiError.BadRequest(e.message));
         }
     }
 
@@ -142,7 +149,11 @@ class CourseController {
                 user_attempts = 0;
             }
 
-            const course = await Courses.findOne({where: {id: course_id}})
+            const course = await Courses.findOne({where: {id: course_id}, include: [{
+                    model: CourseLabels,
+                    as: 'labels',
+                    attributes: ['id', 'label']
+                }],})
             const lector = await Lector.findOne({where: {id: course.lector_id}})
 
             const objectParams = {

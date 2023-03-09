@@ -37,7 +37,7 @@ const Courses = sequelize.define('course', {
     percentage: {type: DataTypes.INTEGER},
     course_level_id: {type: DataTypes.INTEGER},
     course_area_id: {type: DataTypes.INTEGER},
-    labels_id: {type: DataTypes.ARRAY(DataTypes.INTEGER)},
+    // labels_id: {type: DataTypes.ARRAY(DataTypes.INTEGER)},
     previous_price: {type: DataTypes.INTEGER},
 })
 
@@ -54,9 +54,29 @@ const DiscountCodes = sequelize.define('dicountCode', {
 })
 
 const CourseVideo = sequelize.define('courseVideo', {
-    id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
-    course_id: {type: DataTypes.STRING},
-    video_link: {type: DataTypes.STRING}
+    // id: {type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true},
+    // course_id: {type: DataTypes.STRING},
+    // video_link: {type: DataTypes.STRING}
+    id: {
+        allowNull: false,
+        autoIncrement: true,
+        primaryKey: true,
+        type: DataTypes.INTEGER
+    },
+    course_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'courses',
+            key: 'id'
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
+    },
+    video_link: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
 })
 
 const CourseArea = sequelize.define('courseArea', {
@@ -118,11 +138,87 @@ const FavouriteCourses = sequelize.define('favouriteCourses', {
     user_id: {type: DataTypes.INTEGER},
 })
 
-Courses.hasMany(Questions, { foreignKey: 'course_id' });
-Questions.belongsTo(Courses, { foreignKey: 'course_id' });
+// Users
+Users.hasMany(Enrollments, { foreignKey: 'user_id' });
+Users.hasMany(FavouriteCourses, { foreignKey: 'user_id' });
+Users.hasMany(UserTokens, { foreignKey: 'user_id' });
 
+// Enrollments
+Enrollments.belongsTo(Users, { foreignKey: 'user_id' });
+Enrollments.belongsTo(Courses, { foreignKey: 'course_id' });
+
+// Courses
+Courses.hasMany(Enrollments, { foreignKey: 'course_id' });
+Courses.hasMany(Certificates, { foreignKey: 'course_id' });
+Courses.hasMany(FavouriteCourses, { foreignKey: 'course_id' });
+Courses.belongsTo(Lector, { foreignKey: 'lector_id' });
+Courses.belongsTo(CourseArea, { foreignKey: 'course_area_id' });
+Courses.belongsTo(CourseLevel, { foreignKey: 'course_level_id' });
+// Courses.belongsToMany(CourseLabels, {
+//     through: 'courseLabel_course',
+//     foreignKey: 'course_id',
+//     otherKey: 'course_label_id',
+// });
+Courses.belongsToMany(CourseLabels, { through: 'CourseLabel', as: 'labels', foreignKey: 'course_id' });
+
+Courses.hasMany(CourseVideo, { foreignKey: 'course_id' });
+Courses.hasMany(DescriptionTitles, { foreignKey: 'course_id' });
+Courses.hasMany(Questions, { foreignKey: 'course_id' });
+
+// CourseLabels
+// CourseLabels.belongsToMany(Courses, {
+//     through: 'courseLabel_course',
+//     foreignKey: 'course_label_id',
+//     otherKey: 'course_id',
+// });
+CourseLabels.belongsToMany(Courses, { through: 'CourseLabel', as: 'courses', foreignKey: 'course_label_id' });
+
+
+// DiscountCodes
+DiscountCodes.belongsTo(Courses, { foreignKey: 'course_id' });
+
+// CourseVideo
+CourseVideo.belongsTo(Courses, { foreignKey: 'course_id' });
+
+// CourseArea
+CourseArea.hasMany(Courses, { foreignKey: 'course_area_id' });
+
+// CourseLevel
+CourseLevel.hasMany(Courses, { foreignKey: 'course_level_id' });
+
+// DescriptionTitles
+DescriptionTitles.belongsTo(Courses, { foreignKey: 'course_id' });
+DescriptionTitles.hasMany(DescriptionContent, { foreignKey: 'description_title_id' });
+
+// DescriptionContent
+DescriptionContent.belongsTo(DescriptionTitles, { foreignKey: 'description_title_id' });
+
+// Questions
+Questions.belongsTo(Courses, { foreignKey: 'course_id' });
 Questions.hasMany(Answers, { foreignKey: 'question_id' });
+
+// Answers
 Answers.belongsTo(Questions, { foreignKey: 'question_id' });
+
+// UserTokens
+UserTokens.belongsTo(Users, { foreignKey: 'user_id' });
+
+// Lector
+Lector.hasMany(Courses, { foreignKey: 'lector_id' });
+
+// Certificates
+Certificates.belongsTo(Courses, { foreignKey: 'course_id' });
+
+// FavouriteCourses
+FavouriteCourses.belongsTo(Users, { foreignKey: 'user_id' });
+FavouriteCourses.belongsTo(Courses, { foreignKey: 'course_id' });
+
+// Courses.hasMany(Questions, { foreignKey: 'course_id' });
+// Questions.belongsTo(Courses, { foreignKey: 'course_id' });
+//
+// Questions.hasMany(Answers, { foreignKey: 'question_id' });
+// Answers.belongsTo(Questions, { foreignKey: 'question_id' });
+
 
 module.exports = {
     Users,

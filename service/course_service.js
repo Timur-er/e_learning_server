@@ -1,5 +1,5 @@
 const {Lector, CourseArea, CourseLevel, Certificates, Courses, DescriptionTitles, DescriptionContent, CourseVideo,
-    Questions, Answers
+    Questions, Answers, CourseLabels
 } = require("../models/models");
 const path = require("path");
 const uuid = require('uuid')
@@ -84,9 +84,10 @@ class CourseService {
             percentage,
             course_area_id: area.id,
             course_level_id: level.id,
-            labels_id: course_labels,
             previous_price: previous_price,
         })
+
+        await course.addLabels(course_labels);
 
         const course_id = course.id;
 
